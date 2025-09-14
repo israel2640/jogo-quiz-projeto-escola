@@ -1,0 +1,470 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quiz Desafio Java | Com Temporizador</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap');
+
+        :root {
+            --primary-color: #4a90e2;
+            --secondary-color: #f5f7fa;
+            --dark-color: #333;
+            --light-color: #fff;
+            --success-color: #50e3c2;
+            --error-color: #e35050;
+            --warning-color: #f5a623;
+            --border-radius: 8px;
+            --shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Poppins', sans-serif;
+            background-color: var(--secondary-color);
+            color: var(--dark-color);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 900px;
+            background-color: var(--light-color);
+            border-radius: var(--border-radius);
+            box-shadow: var(--shadow);
+            overflow: hidden;
+        }
+
+        /* --- Telas --- */
+        .screen {
+            padding: 40px;
+            display: none;
+        }
+        .screen.active {
+            display: block;
+        }
+
+        /* --- Cabeçalho e Títulos --- */
+        header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        h1 {
+            color: var(--primary-color);
+            font-weight: 700;
+            font-size: 2.5rem;
+        }
+        h2 {
+            font-weight: 600;
+            margin-bottom: 20px;
+            border-bottom: 2px solid var(--primary-color);
+            padding-bottom: 10px;
+        }
+        h1 span {
+            font-weight: 300;
+            color: var(--dark-color);
+        }
+
+        /* --- Componentes de Formulário --- */
+        .form-group {
+            margin-bottom: 20px;
+        }
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 600;
+        }
+        input[type="text"],
+        input[type="number"],
+        select {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #ccc;
+            border-radius: var(--border-radius);
+            font-family: 'Poppins', sans-serif;
+            font-size: 1rem;
+            transition: border-color 0.3s;
+        }
+        input[type="text"]:focus,
+        select:focus {
+            outline: none;
+            border-color: var(--primary-color);
+        }
+        .input-correct { border-left: 5px solid var(--success-color); }
+        .input-incorrect { border-left: 5px solid var(--error-color); }
+
+        /* --- Botões --- */
+        .btn {
+            display: inline-block;
+            padding: 12px 25px;
+            border: none;
+            border-radius: var(--border-radius);
+            cursor: pointer;
+            font-family: 'Poppins', sans-serif;
+            font-size: 1rem;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            text-align: center;
+        }
+        .btn-primary {
+            background-color: var(--primary-color);
+            color: var(--light-color);
+        }
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(74, 144, 226, 0.4);
+        }
+        .btn-secondary { background-color: #6c757d; color: var(--light-color); }
+        .btn-secondary:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(0, 0, 0, 0.2); }
+        .btn-full { width: 100%; }
+
+        /* --- Layout e Elementos Específicos --- */
+        #player-list, #custom-questions-list { list-style: none; margin-top: 15px; }
+        #player-list li, #custom-questions-list li {
+            background-color: var(--secondary-color);
+            padding: 10px;
+            border-radius: 5px;
+            margin-bottom: 5px;
+            font-size: 0.9rem;
+        }
+        
+        #scoreboard {
+            display: flex;
+            justify-content: space-around;
+            margin-bottom: 20px; /* Reduced margin */
+            padding: 20px;
+            background-color: var(--secondary-color);
+            border-radius: var(--border-radius);
+        }
+        .player-score { text-align: center; padding: 10px 20px; border-radius: var(--border-radius); transition: all 0.3s ease; }
+        .player-score.active { background-color: var(--primary-color); color: var(--light-color); transform: scale(1.1); }
+        .player-score .name { font-weight: 600; font-size: 1.2rem; }
+        .player-score .score { font-size: 2rem; font-weight: 700; }
+
+        #timer-display {
+            text-align: center;
+            font-size: 1.8rem;
+            font-weight: 700;
+            color: var(--primary-color);
+            margin-bottom: 20px;
+            height: 40px;
+        }
+
+        #question-area { margin-bottom: 20px; }
+        #question-text { font-size: 1.4rem; margin-bottom: 10px; min-height: 80px; }
+        #question-difficulty { font-style: italic; color: #6c757d; }
+
+        #answer-options { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 15px; margin-top: 20px; }
+        .option-btn {
+            padding: 15px; background: var(--light-color); border: 2px solid var(--primary-color);
+            color: var(--primary-color); border-radius: var(--border-radius); cursor: pointer;
+            transition: all 0.3s ease; font-size: 1rem; font-weight: 600;
+        }
+        .option-btn:hover:not(:disabled) { background: var(--primary-color); color: var(--light-color); }
+        .option-btn.correct { background-color: var(--success-color); border-color: var(--success-color); color: var(--dark-color); }
+        .option-btn.incorrect { background-color: var(--error-color); border-color: var(--error-color); color: var(--light-color); }
+        .option-btn:disabled { cursor: not-allowed; opacity: 0.7; }
+        
+        #feedback-controls { margin-top: 20px; text-align: center; min-height: 50px; }
+        #feedback-message { font-weight: 600; color: var(--warning-color); }
+
+        #winner-declaration { text-align: center; }
+        #winner-name { font-size: 3rem; font-weight: 700; color: var(--primary-color); margin: 20px 0; }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <div id="setup-screen" class="screen active">
+            <header>
+                <h1>Quiz Desafio <span>Java</span></h1>
+                <p>Baseado no Manual Projeto Escola</p>
+            </header>
+            <div id="players-setup">
+                <h2>Jogadores</h2>
+                <div class="form-group"><label for="player-name">Nome do Jogador:</label><input type="text" id="player-name" placeholder="Adicione pelo menos 2 jogadores"></div>
+                <button id="add-player-btn" class="btn btn-secondary">Adicionar Jogador</button>
+                <ul id="player-list"></ul>
+            </div>
+            <hr style="margin: 30px 0; border: 1px solid var(--secondary-color);">
+            <div id="questions-setup">
+                <h2>Adicionar Perguntas de Múltipla Escolha (Opcional)</h2>
+                <div class="form-group"><label for="custom-question">Pergunta:</label><input type="text" id="custom-question"></div>
+                <div class="form-group"><label for="custom-answer-correct">Resposta Correta:</label><input type="text" id="custom-answer-correct" class="input-correct"></div>
+                <div class="form-group"><label for="custom-answer-incorrect1">Resposta Incorreta 1:</label><input type="text" id="custom-answer-incorrect1" class="input-incorrect"></div>
+                <div class="form-group"><label for="custom-answer-incorrect2">Resposta Incorreta 2:</label><input type="text" id="custom-answer-incorrect2" class="input-incorrect"></div>
+                <div class="form-group"><label for="custom-answer-incorrect3">Resposta Incorreta 3:</label><input type="text" id="custom-answer-incorrect3" class="input-incorrect"></div>
+                <div class="form-group"><label for="custom-difficulty">Dificuldade:</label><select id="custom-difficulty"><option value="Básico">Básico (+10)</option><option value="Médio">Médio (+20)</option><option value="Difícil">Difícil (+30)</option></select></div>
+                <button id="add-question-btn" class="btn btn-secondary">Adicionar Pergunta</button>
+                <ul id="custom-questions-list"></ul>
+            </div>
+            <hr style="margin: 30px 0;">
+            <button id="start-game-btn" class="btn btn-primary btn-full">Iniciar Jogo</button>
+        </div>
+
+        <div id="game-screen" class="screen">
+            <div id="scoreboard"></div>
+            <div id="timer-display"></div>
+            <div id="question-area">
+                <p id="question-difficulty"></p>
+                <h2 id="question-text"></h2>
+            </div>
+            <div id="answer-options"></div>
+            <div id="feedback-controls">
+                <p id="feedback-message"></p>
+                <button id="next-question-btn" class="btn btn-primary" style="display: none;">Próxima Pergunta</button>
+            </div>
+        </div>
+
+        <div id="game-over-screen" class="screen">
+            <header><h1>Fim de Jogo!</h1></header>
+            <div id="winner-declaration">
+                <h2>O vencedor é...</h2>
+                <p id="winner-name"></p>
+            </div>
+            <button id="restart-game-btn" class="btn btn-primary btn-full">Jogar Novamente</button>
+        </div>
+    </div>
+
+    <script>
+    document.addEventListener('DOMContentLoaded', () => {
+        let players = [];
+        let scores = {};
+        let currentPlayerIndex = 0;
+        const winningScore = 100;
+
+        let timer;
+        let timerInterval;
+        const timePerQuestion = 30; // 30 segundos para responder
+
+        let questions = [
+            // Perguntas originais...
+            { question: "Qual classe é responsável pela interface de usuário?", options: ["AlunoService", "AlunoView", "AlunoRepository", "Main"], correctAnswer: "AlunoView", difficulty: "Básico" },
+            { question: "Qual o nome do arquivo que define os atributos do aluno?", options: ["Aluno.java", "AlunoService.java", "Main.java", "AlunoView.java"], correctAnswer: "Aluno.java", difficulty: "Básico" },
+            { question: "Para que serve a classe Scanner?", options: ["Para formatar textos", "Para ler a entrada do usuário", "Para criar interfaces", "Para conectar a um banco de dados"], correctAnswer: "Para ler a entrada do usuário", difficulty: "Básico" },
+            { question: "Os atributos da classe Aluno são 'public' ou 'private'?", options: ["public", "static", "protected", "private"], correctAnswer: "private", difficulty: "Básico" },
+            { question: "Qual método da classe Validador verifica se uma string contém apenas números?", options: ["isString", "isNumeric", "isText", "isNumber"], correctAnswer: "isNumeric", difficulty: "Básico" },
+            { question: "Qual a diferença entre AlunoRepositoryLista e AlunoRepositoryVetor?", options: ["Um usa List e o outro Set", "Um tem tamanho dinâmico e outro fixo", "Um ordena por nome e o outro por ID", "Não há diferença"], correctAnswer: "Um tem tamanho dinâmico e outro fixo", difficulty: "Médio" },
+            { question: "O que 'Optional<Aluno>' representa?", options: ["Uma lista de alunos", "Um erro que pode ocorrer", "Um valor que pode ou não estar presente", "Uma classe de alunos obrigatória"], correctAnswer: "Um valor que pode ou não estar presente", difficulty: "Médio" },
+            { question: "Como o método 'listarTodos' em AlunoRepositoryLista ordena os alunos?", options: ["Pela matrícula", "Pelo ID", "Pelo nome", "Pelo curso"], correctAnswer: "Pelo nome", difficulty: "Médio" },
+            { question: "Qual exceção é capturada pelo try-catch em Main.java?", options: ["NullPointerException", "IOException", "NumberFormatException", "ArrayIndexOutOfBoundsException"], correctAnswer: "NumberFormatException", difficulty: "Médio" },
+            { question: "Qual o papel da classe AlunoService?", options: ["Gerenciar a interface do usuário", "Conter a lógica de negócios", "Acessar o banco de dados", "Definir os atributos do Aluno"], correctAnswer: "Conter a lógica de negócios", difficulty: "Médio" },
+            { question: "Por que 'scanner.nextLine()' é usado após 'scanner.nextInt()'?", options: ["Para pular duas linhas", "Para limpar o buffer do scanner", "Para converter o número em texto", "Para aguardar o usuário"], correctAnswer: "Para limpar o buffer do scanner", difficulty: "Difícil" },
+            { question: "Por que os métodos da classe Validador são 'static'?", options: ["Para economizar memória", "São funções utilitárias que não dependem de um estado de objeto", "Para serem mais rápidos", "Porque a interface exige"], correctAnswer: "São funções utilitárias que não dependem de um estado de objeto", difficulty: "Difícil" },
+            { question: "No método 'remover' de AlunoRepositoryVetor, como o espaço vazio é tratado?", options: ["Preenchido com 'null'", "O array é diminuído", "Os elementos seguintes são movidos para a esquerda", "O programa ignora o espaço"], correctAnswer: "Os elementos seguintes são movidos para a esquerda", difficulty: "Difícil" },
+            { question: "O que a anotação @Override indica?", options: ["Que o método deve ser otimizado", "Que o método é obsoleto", "Que o método está sobrescrevendo um da superclasse/interface", "Que o método é privado"], correctAnswer: "Que o método está sobrescrevendo um da superclasse/interface", difficulty: "Difícil" },
+            { question: "Qual a função do método 'ifPresent()' usado com um Optional?", options: ["Executa uma ação apenas se o Optional não estiver vazio", "Lança uma exceção se o Optional estiver vazio", "Retorna 'true' se estiver presente", "Converte o Optional para String"], correctAnswer: "Executa uma ação apenas se o Optional não estiver vazio", difficulty: "Difícil" }
+        ];
+
+        let initialQuestions = [...questions];
+        let availableQuestions = [];
+
+        // DOM Elements
+        const screens = { setup: document.getElementById('setup-screen'), game: document.getElementById('game-screen'), gameOver: document.getElementById('game-over-screen') };
+        const playerNameInput = document.getElementById('player-name');
+        const addPlayerBtn = document.getElementById('add-player-btn');
+        const playerList = document.getElementById('player-list');
+        const startGameBtn = document.getElementById('start-game-btn');
+        const customQuestionInput = document.getElementById('custom-question');
+        const customAnswerCorrectInput = document.getElementById('custom-answer-correct');
+        const customInputsIncorrect = [document.getElementById('custom-answer-incorrect1'), document.getElementById('custom-answer-incorrect2'), document.getElementById('custom-answer-incorrect3')];
+        const customDifficultySelect = document.getElementById('custom-difficulty');
+        const addQuestionBtn = document.getElementById('add-question-btn');
+        const customQuestionsList = document.getElementById('custom-questions-list');
+        const scoreboard = document.getElementById('scoreboard');
+        const timerDisplay = document.getElementById('timer-display');
+        const questionText = document.getElementById('question-text');
+        const questionDifficulty = document.getElementById('question-difficulty');
+        const answerOptionsContainer = document.getElementById('answer-options');
+        const nextQuestionBtn = document.getElementById('next-question-btn');
+        const feedbackMessage = document.getElementById('feedback-message');
+        const winnerName = document.getElementById('winner-name');
+        const restartGameBtn = document.getElementById('restart-game-btn');
+
+        function switchScreen(screenName) {
+            Object.values(screens).forEach(screen => screen.classList.remove('active'));
+            screens[screenName].classList.add('active');
+        }
+
+        function handleAddPlayer() {
+            const name = playerNameInput.value.trim();
+            if (name && !players.includes(name)) {
+                players.push(name);
+                playerList.innerHTML = players.map(p => `<li>${p}</li>`).join('');
+                playerNameInput.value = '';
+            }
+        }
+
+        function handleAddQuestion() {
+            const question = customQuestionInput.value.trim();
+            const correctAnswer = customAnswerCorrectInput.value.trim();
+            const incorrectAnswers = customInputsIncorrect.map(input => input.value.trim()).filter(Boolean);
+
+            if (question && correctAnswer && incorrectAnswers.length > 0) {
+                questions.push({ question, options: [...incorrectAnswers, correctAnswer], correctAnswer, difficulty: customDifficultySelect.value });
+                const customQuestions = questions.slice(initialQuestions.length);
+                customQuestionsList.innerHTML = customQuestions.map(q => `<li>[${q.difficulty}] ${q.question}</li>`).join('');
+                [customQuestionInput, customAnswerCorrectInput, ...customInputsIncorrect].forEach(input => input.value = '');
+            } else {
+                alert('Preencha a pergunta, a resposta correta e pelo menos uma incorreta.');
+            }
+        }
+
+        function handleStartGame() {
+            if (players.length < 2) {
+                alert('Adicione pelo menos 2 jogadores.');
+                return;
+            }
+            players.forEach(player => scores[player] = 0);
+            currentPlayerIndex = 0;
+            availableQuestions = [...questions];
+            updateScoreboard();
+            displayNewQuestion();
+            switchScreen('game');
+        }
+
+        function updateScoreboard() {
+            scoreboard.innerHTML = players.map((player, index) =>
+                `<div class="player-score ${index === currentPlayerIndex ? 'active' : ''}">
+                    <div class="name">${player}</div>
+                    <div class="score">${scores[player]}</div>
+                </div>`
+            ).join('');
+        }
+
+        function startTimer() {
+            timer = timePerQuestion;
+            timerDisplay.textContent = timer;
+            timerInterval = setInterval(() => {
+                timer--;
+                timerDisplay.textContent = timer;
+                if (timer <= 5) timerDisplay.style.color = getComputedStyle(document.documentElement).getPropertyValue('--warning-color');
+                if (timer <= 0) handleTimeUp();
+            }, 1000);
+        }
+
+        function stopTimer() {
+            clearInterval(timerInterval);
+            timerDisplay.style.color = 'var(--primary-color)';
+        }
+
+        function handleTimeUp() {
+            stopTimer();
+            feedbackMessage.textContent = 'Tempo esgotado!';
+            revealAnswers();
+        }
+
+        function shuffleArray(array) {
+            for (let i = array.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [array[i], array[j]] = [array[j], array[i]];
+            }
+            return array;
+        }
+
+        let currentQuestion = null;
+
+        function displayNewQuestion() {
+            if (availableQuestions.length === 0) {
+                endGame("Fim das perguntas!");
+                return;
+            }
+            const qIndex = Math.floor(Math.random() * availableQuestions.length);
+            currentQuestion = availableQuestions.splice(qIndex, 1)[0];
+
+            questionText.textContent = currentQuestion.question;
+            questionDifficulty.textContent = `Dificuldade: ${currentQuestion.difficulty}`;
+            answerOptionsContainer.innerHTML = '';
+            feedbackMessage.textContent = '';
+            
+            shuffleArray([...currentQuestion.options]).forEach(option => {
+                const button = document.createElement('button');
+                button.textContent = option;
+                button.className = 'option-btn';
+                button.addEventListener('click', handleSelectAnswer);
+                answerOptionsContainer.appendChild(button);
+            });
+
+            nextQuestionBtn.style.display = 'none';
+            startTimer();
+        }
+
+        function revealAnswers() {
+            Array.from(answerOptionsContainer.children).forEach(button => {
+                button.disabled = true;
+                if (button.textContent === currentQuestion.correctAnswer) button.classList.add('correct');
+                else button.classList.add('incorrect');
+            });
+            nextQuestionBtn.style.display = 'inline-block';
+        }
+
+        function handleSelectAnswer(event) {
+            stopTimer();
+            const selectedButton = event.target;
+            const isCorrect = selectedButton.textContent === currentQuestion.correctAnswer;
+            
+            if (isCorrect) {
+                let points = 0;
+                if (currentQuestion.difficulty === 'Básico') points = 10;
+                if (currentQuestion.difficulty === 'Médio') points = 20;
+                if (currentQuestion.difficulty === 'Difícil') points = 30;
+                scores[players[currentPlayerIndex]] += points;
+            }
+
+            revealAnswers();
+            updateScoreboard();
+
+            if (scores[players[currentPlayerIndex]] >= winningScore) {
+                setTimeout(() => endGame(players[currentPlayerIndex]), 1200);
+            }
+        }
+
+        function handleNextTurn() {
+            currentPlayerIndex = (currentPlayerIndex + 1) % players.length;
+            updateScoreboard();
+            displayNewQuestion();
+        }
+
+        function endGame(winner) {
+            stopTimer();
+            if (winner.includes("Fim das perguntas")) {
+                let maxScore = -1;
+                const winners = [];
+                Object.values(scores).forEach(score => { if (score > maxScore) maxScore = score; });
+                players.forEach(player => { if (scores[player] === maxScore) winners.push(player); });
+                winnerName.textContent = winners.join(' & ');
+            } else {
+                winnerName.textContent = winner;
+            }
+            switchScreen('gameOver');
+        }
+
+        function handleRestartGame() {
+            players = [];
+            scores = {};
+            questions = [...initialQuestions];
+            playerList.innerHTML = '';
+            customQuestionsList.innerHTML = '';
+            switchScreen('setup');
+        }
+
+        addPlayerBtn.addEventListener('click', handleAddPlayer);
+        addQuestionBtn.addEventListener('click', handleAddQuestion);
+        startGameBtn.addEventListener('click', handleStartGame);
+        nextQuestionBtn.addEventListener('click', handleNextTurn);
+        restartGameBtn.addEventListener('click', handleRestartGame);
+        playerNameInput.addEventListener('keypress', (e) => { if(e.key === 'Enter') handleAddPlayer(); });
+    });
+    </script>
+</body>
+</html>
